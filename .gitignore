@@ -5,3 +5,4 @@ samples/
 *.exe
 *.dll
 __pycache__/
+dist/

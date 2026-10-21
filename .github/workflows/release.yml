@@ -1,0 +1,30 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  package:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: unit tests
+        run: python -m unittest discover -s tests -v
+      - name: build package (downloads pinned artifacts, verifies checksums)
+        run: python scripts/build_package.py
+      - name: publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/stcc-*.zip
+          body: |
+            stcc speech-to-closed-captions package (win-x64, CPU).
+
+            Zip contents: stcc.py + parakeet.cpp runtime + Fluid Speech Mini
+            model + Silero VAD. Extract into a whitelisted binaries directory
+            and invoke `python stcc.py transcribe ...` / `python stcc.py info`.
+            See NOTICE-stcc.txt for bundled-component licenses.
