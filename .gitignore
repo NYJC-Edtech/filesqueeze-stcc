@@ -1,0 +1,7 @@
+artifacts/
+samples/
+*.gguf
+*.wav
+*.exe
+*.dll
+__pycache__/
