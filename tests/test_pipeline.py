@@ -35,7 +35,7 @@ class TranscribePipelineTest(unittest.TestCase):
             video.write_bytes(b"fake")
             outdir = tmp_path / "out"
             opts = make_opts([
-                "transcribe", str(video), "--output-dir", str(outdir),
+                "transcribe", str(video), "--ffmpeg", "ffmpeg", "--output-dir", str(outdir),
                 "--formats", "srt,txt", "--min-ram-gb", "0",
             ])
             with mock.patch.object(stcc, "extract_audio"), \
@@ -57,7 +57,7 @@ class TranscribePipelineTest(unittest.TestCase):
             video = tmp_path / "lecture.mp4"
             video.write_bytes(b"fake")
             opts = make_opts([
-                "transcribe", str(video), "--output-dir", str(tmp_path),
+                "transcribe", str(video), "--ffmpeg", "ffmpeg", "--output-dir", str(tmp_path),
                 "--formats", "txt", "--min-conf", "0.8", "--min-ram-gb", "0",
             ])
             filtered = [w for w in CANNED["words"] if w["conf"] >= 0.8]
@@ -72,7 +72,7 @@ class TranscribePipelineTest(unittest.TestCase):
             video = Path(tmp) / "lecture.mp4"
             video.write_bytes(b"fake")
             opts = make_opts([
-                "transcribe", str(video), "--min-ram-gb", "99999",
+                "transcribe", str(video), "--ffmpeg", "ffmpeg", "--min-ram-gb", "99999",
             ])
             with mock.patch.object(stcc, "ram_gb", return_value={"total": 16.0, "available": 1.0}):
                 with self.assertRaises(stcc.StccError) as ctx:
