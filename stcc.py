@@ -171,13 +171,16 @@ def gpu_name() -> str:
 
 # ------------------------------------------------------------- cue building
 
-def format_ts(seconds: float) -> str:
-    """SRT timestamp: HH:MM:SS,mmm (negative inputs clamped to 0)."""
+def format_ts(seconds: float, ms_sep: str = ",") -> str:
+    """Cue timestamp HH:MM:SS<ms_sep>mmm (negative inputs clamped to 0).
+
+    Default separator ',' is SRT; WebVTT uses '.'.
+    """
     ms = int(round(max(0.0, seconds) * 1000))
     h, ms = divmod(ms, 3_600_000)
     mnt, ms = divmod(ms, 60_000)
     s, ms = divmod(ms, 1000)
-    return "%02d:%02d:%02d,%03d" % (h, mnt, s, ms)
+    return "%02d:%02d:%02d%s%03d" % (h, mnt, s, ms_sep, ms)
 
 
 def group_cues(words: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -248,6 +251,22 @@ def render_srt(cues: List[Dict[str, Any]]) -> str:
             % (i, format_ts(cue["start"]), format_ts(cue["end"]), wrap_two_lines(cue["text"]))
         )
     return "\n\n".join(blocks) + ("\n" if blocks else "")
+
+
+def render_vtt(cues: List[Dict[str, Any]]) -> str:
+    """WebVTT rendering of the same cue data as render_srt.
+
+    Differences per spec: mandatory WEBVTT header and '.' as the
+    millisecond separator. Numeric cue ids are valid VTT identifiers;
+    line wrapping matches SRT exactly.
+    """
+    blocks = []
+    for i, cue in enumerate(cues, 1):
+        blocks.append(
+            "%d\n%s --> %s\n%s"
+            % (i, format_ts(cue["start"], "."), format_ts(cue["end"], "."), wrap_two_lines(cue["text"]))
+        )
+    return "WEBVTT\n\n" + "\n\n".join(blocks) + ("\n" if blocks else "")
 
 
 def _write_text(path: Path, content: str) -> None:
@@ -351,6 +370,9 @@ def transcribe_one(video: Path, opts: argparse.Namespace) -> str:
     if "srt" in formats:
         _write_text(outdir / ("%s.srt" % name), render_srt(cues))
         written.append(name + ".srt")
+    if "vtt" in formats:
+        _write_text(outdir / ("%s.vtt" % name), render_vtt(cues))
+        written.append(name + ".vtt")
     if "txt" in formats:
         _write_text(outdir / ("%s.txt" % name), "\n".join(c["text"] for c in cues) + "\n")
         written.append(name + ".txt")
@@ -421,7 +443,7 @@ def build_parser() -> argparse.ArgumentParser:
     t.add_argument("--ffmpeg", help="ffmpeg path (default: search PATH)")
     t.add_argument("--output-dir", help="where captions go (default: beside each video)")
     t.add_argument("--name", help="output basename override (default: video stem)")
-    t.add_argument("--formats", default="srt,txt", help="comma list of srt,txt,json")
+    t.add_argument("--formats", default="srt,txt", help="comma list of srt,vtt,txt,json")
     t.add_argument("--threads", type=int, default=None, help="runtime threads (default: min(8, cores))")
     t.add_argument("--timeout", type=float, default=0, help="kill runtime after S seconds (default: never)")
     t.add_argument("--min-conf", type=float, default=None, help="drop words below this confidence (runtime --min-local-conf)")

@@ -34,7 +34,7 @@ where exe execution is permitted (FileSqueeze's whitelisted binaries dir).
 python stcc.py transcribe --ffmpeg C:\path\ffmpeg.exe --output-dir out lecture.mp4
 
 # more options
-python stcc.py transcribe --formats srt,txt,json --threads 8 --name mycaptions video.mp4
+python stcc.py transcribe --formats srt,vtt,txt,json --threads 8 --name mycaptions video.mp4
 
 # machine + package report (for support / doctor integration)
 python stcc.py info

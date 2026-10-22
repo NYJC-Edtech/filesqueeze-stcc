@@ -51,6 +51,28 @@ class TranscribePipelineTest(unittest.TestCase):
             self.assertEqual(txt.splitlines()[0], "Hello world. Second sentence here.")
             self.assertIn("1 cues / 5 words", summary)
 
+    def test_writes_vtt_alongside_srt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            video = tmp_path / "lecture.mp4"
+            video.write_bytes(b"fake")
+            outdir = tmp_path / "out"
+            opts = make_opts([
+                "transcribe", str(video), "--ffmpeg", "ffmpeg", "--output-dir", str(outdir),
+                "--formats", "srt,vtt", "--min-ram-gb", "0",
+            ])
+            with mock.patch.object(stcc, "extract_audio"), \
+                 mock.patch.object(stcc, "run_parakeet", return_value=CANNED), \
+                 mock.patch.object(stcc, "component_paths", return_value={}):
+                summary = stcc.transcribe_one(video, opts)
+
+            vtt = (outdir / "lecture.vtt").read_text(encoding="utf-8")
+            self.assertTrue(vtt.startswith("WEBVTT\n\n"))
+            self.assertIn("00:00:00.000 --> 00:00:02.200", vtt)
+            self.assertIn("Hello world. Second sentence here.", vtt)
+            self.assertTrue((outdir / "lecture.srt").exists())
+            self.assertIn("lecture.srt, lecture.vtt", summary)
+
     def test_min_conf_filters_words_before_grouping(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
